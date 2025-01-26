@@ -7,17 +7,17 @@ const roomSchema = new mongoose.Schema(
       ref: "HostelPG",
       required: true,
     },
-    roomNumber: { type: String, required: true },
+    roomNumber: { type: Number, required: true, unique: true },
     roomType: {
       type: String,
       enum: ["Single", "Double", "Triple", "Multiple"],
       required: true,
     },
-    occupancyStatus: { type: Boolean, default: false },
-    price: { type: Number, required: true },
     features: [{ type: String }],
   },
   { timestamps: true }
 );
+
+roomSchema.index({ pgId: 1, roomNumber: 1 }, { unique: true });
 
 export default mongoose.model("Room", roomSchema);

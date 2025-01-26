@@ -33,6 +33,20 @@ const mealSchema = new mongoose.Schema(
         isVegetarian: { type: Boolean, default: true },
       },
     ],
+    tenantPreferences: [
+      {
+        tenantId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Tenant",
+        },
+        optedIn: { type: Boolean, default: true }, // Whether the tenant opts in for this meal
+        customPrice: { type: Number }, // Optional custom price for this tenant
+      },
+    ],
+    price: {
+      type: Number, // Price for the meal
+      required: false,
+    },
   },
   { timestamps: true }
 );

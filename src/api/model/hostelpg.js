@@ -10,7 +10,6 @@ const hostelPGSchema = new mongoose.Schema(
       required: true,
     },
     features: [{ type: String }],
-    roomCount: { type: Number, required: true },
     images: [{ type: String }],
     meal: {
       type: String,

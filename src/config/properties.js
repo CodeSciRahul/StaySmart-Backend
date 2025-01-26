@@ -5,5 +5,9 @@ export const properties = {
     SECERT_KEY: process.env.SECERT_KEY,
     SALT_ROUND: process.env.SALT_ROUND,
     PORT: Number(process.env.PORT),
-    MOONGO_URI: process.env.MOONGO_URI 
+    MOONGO_URI: process.env.MOONGO_URI, 
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+    AWS_SENDER_EMAIL: process.env.SENDER_EMAIL,
+    AWS_REGION: process.env.AWS_REGION
 }
