@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
-
-const connectDB = async(mongoUrl) => {
+import redis from "redis"
+import { properties } from "./properties.js";
+export const connectDB = async(mongoUrl) => {
     const db_config_object = { 
         // ssl: true, 
     };
@@ -14,4 +15,9 @@ const connectDB = async(mongoUrl) => {
     })
 }
 
-export default connectDB
+export const Redisclient = redis.createClient({
+    socket: {
+        host: '127.0.0.1', // Force IPv4
+        port: 6379,
+    },
+});

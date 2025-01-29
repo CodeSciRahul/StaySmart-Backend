@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const hostelPGSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
+    name: { type: String, required: [true, "Hostel or PG name is required"]},
     address: { type: String, required: true },
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,

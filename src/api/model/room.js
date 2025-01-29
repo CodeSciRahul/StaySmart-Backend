@@ -5,13 +5,13 @@ const roomSchema = new mongoose.Schema(
     pgId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "HostelPG",
-      required: true,
+      required: [true, "PG ID is required"],
     },
-    roomNumber: { type: Number, required: true, unique: true },
+    roomNumber: { type: Number, required: [true, "Room is required"], unique: true },
     roomType: {
       type: String,
       enum: ["Single", "Double", "Triple", "Multiple"],
-      required: true,
+      required: [true, "Room type is require"],
     },
     features: [{ type: String }],
   },

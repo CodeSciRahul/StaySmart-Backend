@@ -6,14 +6,14 @@ const paymentSchema = new mongoose.Schema({
     ref: "Booking",
     required: true,
   },
-  amount: { type: Number, required: true },
+  amount: { type: Number, required: [true, "amount is required"] },
   date: { type: Date, required: true },
   method: {
     type: String,
     enum: ["Cash", "Check", "Online"],
-    required: true,
+    required: [true, "Payment method is required"],
   },
-  status: { type: String, enum: ["Successful", "Failed"], required: true },
+  status: { type: String, enum: ["Successful", "Failed"], required: [true, "Status is required"] },
 }, { timestamps: true });
 
 

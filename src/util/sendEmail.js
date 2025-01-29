@@ -1,5 +1,5 @@
 import AWS from "aws-sdk"
-import properties from "../config/properties.js"
+import {properties} from "../config/properties.js"
 
 // Configure AWS SES
 AWS.config.update({
