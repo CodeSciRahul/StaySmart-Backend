@@ -5,6 +5,9 @@ import {connectDB} from "./src/config/dbConnection.js";
 import { properties } from "./src/config/properties.js";
 import { Redisclient } from "./src/config/dbConnection.js";
 import { authRoute } from "./src/api/route/auth/auth.js";
+import {roomRoute} from "./src/api/route/hostelPG/room.js"
+import { hostelPGRoute } from "./src/api/route/HostelPG/HostelPG.js";
+import { protectOwnerRoute } from "./src/api/middleware/protectRoute/owner.js";
 
 //connect DB
 connectDB(properties.MOONGO_URI).catch(err => {
@@ -48,6 +51,8 @@ app.get("/", async (req, res) => {
 
   //different route
   app.use("/api", authRoute);
+  app.use("api",protectOwnerRoute, roomRoute)
+  app.use("/api", hostelPGRoute)
 
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

@@ -10,5 +10,10 @@ export const properties = {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     AWS_SENDER_EMAIL: process.env.SENDER_EMAIL,
     AWS_REGION: process.env.AWS_REGION,
-    REDIS_PORT: process.env.REDIS_PORT
+    REDIS_PORT: process.env.REDIS_PORT,
+    AWS_S3_ACCESS_KEY: process.env.AWS_S3_ACCESS_KEY,
+    AWS_S3_SECRET_kEY: process.env.AWS_S3_SECRET_kEY,
+    AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME,
+    AWS_S3_REGION: process.env.AWS_S3_REGION
+
 }

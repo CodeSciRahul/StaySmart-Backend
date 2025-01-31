@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import properties from "../../config/properties.js";
+import { properties } from "../../../config/properties";
 
 export const protectRoute = async (req, res, next) => {
   const secret_key = properties?.SECRET_KEY;
@@ -14,7 +14,14 @@ export const protectRoute = async (req, res, next) => {
   try {
     const decode = jwt.verify(token, secret_key);
     req.user = decode;
+    const {role} = req.user
+    if (!(role === "tenant")) {
+        return res.status(400).send({
+            message: "You are not authorized to perform this action"
+        });
+    }
     next();
+
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({

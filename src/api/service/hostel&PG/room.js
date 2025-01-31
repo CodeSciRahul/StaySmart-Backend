@@ -1,0 +1,211 @@
+import Room from "../../model/room.js";
+import { handleError } from "../../../util/handleError.js";
+
+// Create a Room
+export const addRoom = async (req, res) => {
+  try {
+    const { pgId, roomNumber, roomType, features } = req.body;
+
+    const room = new Room({ pgId, roomNumber, roomType, features });
+    await room.save();
+
+    res.status(201).send({ message: "Room created successfully", room });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// Get All Rooms
+export const getAllRooms = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Aggregate pipeline
+    const rooms = await Room.aggregate([
+      {
+        $lookup: {
+          from: "beds", // Collection name of Bed
+          localField: "_id",
+          foreignField: "roomId",
+          as: "beds",
+        },
+      },
+      {
+        $unwind: { path: "$beds", preserveNullAndEmptyArrays: true }, // Flatten beds array
+      },
+      {
+        $lookup: {
+          from: "tenants", // Collection name of Tenant
+          localField: "beds.tenantId",
+          foreignField: "_id",
+          as: "beds.tenant",
+        },
+      },
+      {
+        $unwind: { path: "$beds.tenant", preserveNullAndEmptyArrays: true }, // Flatten tenant array
+      },
+      {
+        $group: {
+          _id: "$_id",
+          pgId: { $first: "$pgId" },
+          roomNumber: { $first: "$roomNumber" },
+          roomType: { $first: "$roomType" },
+          features: { $first: "$features" },
+          createdAt: { $first: "$createdAt" },
+          updatedAt: { $first: "$updatedAt" },
+          beds: {
+            $push: {
+              _id: "$beds._id",
+              bednumber: "$beds.bednumber",
+              price: "$beds.price",
+              tenant: {
+                _id: "$beds.tenant._id",
+                name: "$beds.tenant.name",
+                email: "$beds.tenant.email",
+              },
+            },
+          },
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+    ]);
+
+    //meta data about pagination.
+    const totalPages = Math.ceil(totalRooms / limit);
+    const previousPage = page - 1 === 0 ? null : page - 1;
+    const nextPage = page >= totalPages ? null : page + 1;
+    res.status(200).send({
+      data: rooms,
+      meta: {
+        totalOrders,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
+        previousPage,
+        nextPage,
+      },
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+//Get Room by ID
+export const getSignleRoom = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const roomObjectId = new Object(id);
+
+    const room = await Room.aggregate([
+      {
+        $match: { _id: roomObjectId },
+      },
+      {
+        $lookup: {
+          from: "beds",
+          localField: "_id",
+          foreignField: "roomId",
+          as: "beds",
+        },
+      },
+      {
+        $lookup: {
+          from: "tenants",
+          localField: "beds.tenantId",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                email: 1,
+              },
+            },
+          ],
+          as: "tenantDetails",
+        },
+      },
+      {
+        $addFields: {
+          beds: {
+            $map: {
+              input: "$beds",
+              as: "bed",
+              in: {
+                _id: "$$bed._id",
+                bednumber: "$$bed.bednumber",
+                price: "$$bed.price",
+                tenant: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$tenantDetails",
+                        as: "tenant",
+                        cond: { $eq: ["$$tenant._id", "$$bed.tenantId"] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          tenantDetails: 0,
+        },
+      },
+    ]);
+
+    if (!room.length) {
+      return res.status(404).send({ message: "Room not found" });
+    }
+
+    res.status(200).send({ data: room[0] });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// Update a Room
+export const updateRoom = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedRoom = await Room.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedRoom) {
+      return res.status(404).send({ message: "Room not found" });
+    }
+
+    res
+      .status(200)
+      .send({ message: "Room updated successfully", room: updatedRoom });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// Delete a Room
+export const deleteRoom = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedRoom = await Room.findByIdAndDelete(id);
+
+    if (!deletedRoom) {
+      return res.status(404).send({ message: "Room not found" });
+    }
+
+    res.status(200).send({ message: "Room deleted successfully" });
+  } catch (error) {
+    handleError(error, res);
+  }
+};

@@ -96,7 +96,6 @@ export const register = async (req, res) => {
         errors: "Validation error",
       });
     }
-    console.error(error?.message);
     res.status(500).send({ message: "Server error.", error: error?.message });
   }
 };
