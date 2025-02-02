@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { properties } from "../../../config/properties.js";
 
 export const protectOwnerRoute = async (req, res, next) => {
-  const secret_key = properties?.SECRET_KEY;
+  const secret_key = properties?.JWT_SECERT_KEY;
   const token = req.header('Authorization')?.split(" ")[1];
 
   if (!token) {

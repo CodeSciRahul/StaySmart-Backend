@@ -1,5 +1,6 @@
 import Room from "../../model/room.js";
 import { handleError } from "../../../util/handleError.js";
+import room from "../../model/room.js";
 
 // Create a Room
 export const addRoom = async (req, res) => {
@@ -9,7 +10,7 @@ export const addRoom = async (req, res) => {
     const room = new Room({ pgId, roomNumber, roomType, features });
     await room.save();
 
-    res.status(201).send({ message: "Room created successfully", room });
+    res.status(201).send({ message: "Room created successfully", data: room });
   } catch (error) {
     handleError(error, res);
   }
@@ -25,10 +26,10 @@ export const getAllRooms = async (req, res) => {
     // Aggregate pipeline
     const rooms = await Room.aggregate([
       {
-        $lookup: {
-          from: "beds", // Collection name of Bed
-          localField: "_id",
-          foreignField: "roomId",
+        $lookup: {      //lookup is use to joing the bed collection
+          from: "Bed", // Collection name of Bed
+          localField: "_id", // room ki _id
+          foreignField: "roomId", //room ki id bed ki roomId field se match hogi
           as: "beds",
         },
       },
@@ -37,7 +38,7 @@ export const getAllRooms = async (req, res) => {
       },
       {
         $lookup: {
-          from: "tenants", // Collection name of Tenant
+          from: "Tenant", // Collection name of Tenant
           localField: "beds.tenantId",
           foreignField: "_id",
           as: "beds.tenant",
@@ -69,9 +70,12 @@ export const getAllRooms = async (req, res) => {
           },
         },
       },
+      {$sort: {roomNumber: 1}},
       { $skip: skip },
       { $limit: limit },
     ]);
+
+    const totalRooms = await Room.countDocuments()
 
     //meta data about pagination.
     const totalPages = Math.ceil(totalRooms / limit);
@@ -80,7 +84,7 @@ export const getAllRooms = async (req, res) => {
     res.status(200).send({
       data: rooms,
       meta: {
-        totalOrders,
+        totalRooms,
         totalPages,
         currentPage: page,
         itemsPerPage: limit,
@@ -177,18 +181,24 @@ export const getSignleRoom = async (req, res) => {
 export const updateRoom = async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedRoom = await Room.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const {roomNumber, roomType, features} = req.body;
 
-    if (!updatedRoom) {
+    const room = await Room.findById(id);
+
+    if (!room) {
       return res.status(404).send({ message: "Room not found" });
     }
 
+     //update room
+     room.roomNumber = roomNumber || room.roomNumber;
+     room.roomType = roomType || room.roomType;
+     room.features = features || room.features;
+
+     await room.save();
+
     res
       .status(200)
-      .send({ message: "Room updated successfully", room: updatedRoom });
+      .send({ message: "Room updated successfully", data: room });
   } catch (error) {
     handleError(error, res);
   }

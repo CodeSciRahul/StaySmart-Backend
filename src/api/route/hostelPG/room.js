@@ -11,8 +11,8 @@ import { Router } from "express";
 export const roomRoute = Router();
 
 
-roomRoute.post("room", addRoom);
-roomRoute.put("room/:id", updateRoom);
-roomRoute.delete("room/:id", deleteRoom);
-roomRoute.get("room", getAllRooms);
-roomRoute.get("room/:id", getSignleRoom);
+roomRoute.post("/room", addRoom);
+roomRoute.put("/room/:id", updateRoom);
+roomRoute.delete("/room/:id", deleteRoom);
+roomRoute.get("/rooms", getAllRooms);
+roomRoute.get("/room/:id", getSignleRoom);

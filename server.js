@@ -51,7 +51,7 @@ app.get("/", async (req, res) => {
 
   //different route
   app.use("/api", authRoute);
-  app.use("api",protectOwnerRoute, roomRoute)
+  app.use("/api",protectOwnerRoute, roomRoute)
   app.use("/api", hostelPGRoute)
 
   app.listen(port, () => {

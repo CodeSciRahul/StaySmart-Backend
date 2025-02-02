@@ -7,8 +7,12 @@ export const AddHostelPG = async (req, res) => {
   try {
     const { name, address, features, meal, ownerId } = req.body;
     const files = req.files;
+    console.log("files",files);
 
-    const uploadedImagesURL = await uploadFilesToAws(files);
+    let uploadedImagesURL 
+    if(files) {
+      uploadedImagesURL = await uploadFilesToAws(files);
+    }
 
     const hostelPG = new HostelPG({
       name,
@@ -40,7 +44,7 @@ export const getAllHostelsPGs = async (req, res) => {
     HostelPG.find()
       .limit(limit)
       .skip(skip)
-      .populate('ownerId', 'name, email, phone'),
+      .populate('ownerId', '_id name email phone'),
     HostelPG.countDocuments()
     ])
 
@@ -83,15 +87,25 @@ export const updateHostelPG = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, address, features, meal } = req.body;
+    const files = req.files;
+    console.log(name, address, features, meal, files)
 
     const hostelPG = await HostelPG.findById(id);
     if (!hostelPG)
       return res.status(404).send({ message: "Hostel/PG not found" });
 
+    let ImageUrls;
+    if(files){
+      ImageUrls = await uploadFilesToAws(files);
+    }
+    console.log("Image url", ImageUrls)
+
+
     hostelPG.name = name || hostelPG.name;
     hostelPG.address = address || hostelPG.address;
     hostelPG.features = features || hostelPG.features;
     hostelPG.meal = meal || hostelPG.meal;
+    hostelPG.images = ImageUrls || hostelPG.images
 
     await hostelPG.save();
 
