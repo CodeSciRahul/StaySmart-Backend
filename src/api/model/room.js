@@ -20,4 +20,6 @@ const roomSchema = new mongoose.Schema(
 
 roomSchema.index({ pgId: 1, roomNumber: 1 }, { unique: true });
 
+
+
 export default mongoose.model("Room", roomSchema);

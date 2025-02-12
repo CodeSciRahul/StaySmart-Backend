@@ -7,7 +7,6 @@ export const AddHostelPG = async (req, res) => {
   try {
     const { name, address, features, meal, ownerId } = req.body;
     const files = req.files;
-    console.log("files",files);
 
     let uploadedImagesURL 
     if(files) {
@@ -28,7 +27,6 @@ export const AddHostelPG = async (req, res) => {
       .status(200)
       .send({ message: "Hostel or PG added successfully", data: hostelPG });
   } catch (error) {
-    console.log(error)
     handleError(error, res);
   }
 };

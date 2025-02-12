@@ -18,6 +18,7 @@ const ownerSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+      select: false,
       match: [/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 'Password must contain at least 8 characters, including at least one lowercase letter, one uppercase letter, one special char and one number'],
     },
     phone: {

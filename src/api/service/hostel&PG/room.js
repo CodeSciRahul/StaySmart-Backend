@@ -1,4 +1,5 @@
 import Room from "../../model/room.js";
+import HostelPG from "../../model/hostelpg.js"
 import { handleError } from "../../../util/handleError.js";
 import room from "../../model/room.js";
 
@@ -6,6 +7,7 @@ import room from "../../model/room.js";
 export const addRoom = async (req, res) => {
   try {
     const { pgId, roomNumber, roomType, features } = req.body;
+
 
     const room = new Room({ pgId, roomNumber, roomType, features });
     await room.save();
@@ -19,12 +21,17 @@ export const addRoom = async (req, res) => {
 // Get All Rooms
 export const getAllRooms = async (req, res) => {
   try {
+    const {pgId} = req.params
+    const hostelPgId = new Object(pgId);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
     // Aggregate pipeline
     const rooms = await Room.aggregate([
+      {
+        $match: {pgId: hostelPgId}
+      },
       {
         $lookup: {      //lookup is use to joing the bed collection
           from: "Bed", // Collection name of Bed

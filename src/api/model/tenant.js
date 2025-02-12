@@ -24,6 +24,7 @@ const tenantSchema = new mongoose.Schema(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
         "Password must contain at least 8 characters, including at least one lowercase letter, one uppercase letter, one special character, and one number.",
       ],
+      select: false, // Exclude password by default in all queries
     },
     phone: {
       type: String,
