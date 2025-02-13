@@ -8,7 +8,7 @@ export const addBed = async (req, res) => {
     const { roomId, tenantId, bednumber, price } = req.body;
     const newBed = new Bed({ roomId, tenantId, bednumber, price });
     await newBed.save();
-    return handleSuccessRes(newBed, res, "Bed added successfully")
+    handleSuccessRes(newBed, res, "Bed added successfully")
   } catch (error) {
     handleError(error, res);
   }
@@ -34,7 +34,7 @@ export const updateBed = async (req, res) => {
         }
     }
 
-    return handleSuccessRes(updateBed, res, "Bed updated successfully")
+    handleSuccessRes(updateBed, res, "Bed updated successfully")
   } catch (error) {
     handleError(error, res);
   }
@@ -144,7 +144,7 @@ export const bed = async (req, res) => {
                 isCustomError: true
             }
         }
-        return handleSuccessRes(bed, res, "Bed reterived successfully")
+        handleSuccessRes(bed, res, "Bed reterived successfully")
         
     } catch (error) {
         handleError(error, res);

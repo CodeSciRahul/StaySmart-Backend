@@ -7,6 +7,6 @@ const tenantHistorySchema = new mongoose.Schema({
     bedId: { type: mongoose.Schema.Types.ObjectId, ref: "Bed" },
     startDate: { type: Date, required: true },
     endDate: { type: Date },
-  });
+});
 
 export default mongoose.model("TenantHistory", tenantHistorySchema)

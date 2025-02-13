@@ -7,14 +7,14 @@ const hostelPGSchema = new mongoose.Schema(
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Owner",
-      required: true,
+      required: [true, "Owner is required"],
     },
     features: [{ type: String }],
     images: [{ type: String }],
     meal: {
       type: String,
       enum: ["Available", "Not Available"],
-      required: true,
+      required: [true, "Mention Meal wheather Available or Not Available"],
     },
   },
   { timestamps: true }
