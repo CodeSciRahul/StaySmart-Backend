@@ -12,7 +12,7 @@ const BedSchema = new mongoose.Schema({
         default: null,
     },
     bednumber: {
-        type: Number,
+        type: String,
         required: [true, "Bed number is required"],
         unique: true,
     },
