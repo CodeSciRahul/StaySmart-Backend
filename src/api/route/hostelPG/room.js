@@ -14,5 +14,5 @@ export const roomRoute = Router();
 roomRoute.post("/room", addRoom);
 roomRoute.put("/room/:id", updateRoom);
 roomRoute.delete("/room/:id", deleteRoom);
-roomRoute.get("/rooms", getAllRooms);
+roomRoute.get("/rooms/:pgId", getAllRooms);
 roomRoute.get("/room/:id", getSignleRoom);

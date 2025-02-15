@@ -32,11 +32,13 @@ export const createPayment = async(req, res) => {
         }
         let newPayment;
         let paymentPayload = dynamicPaymentPayload(req.body, price);
+        let message;
         
         //if payment method is cash
         if(paymentMethod === "Cash") {
             newPayment = new Payment(paymentPayload);
             await newPayment.save({session});
+            message = ""
         }
 
         // if(paymentMethod === "Online"){
@@ -46,7 +48,7 @@ export const createPayment = async(req, res) => {
         handleSuccessRes(
             newPayment,
             res,
-            "Payment Received - Thank You!"
+            message
         )
 
     } catch (error) {

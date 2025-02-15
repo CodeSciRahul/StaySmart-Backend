@@ -1,101 +1,128 @@
 import mongoose from "mongoose";
 
-const BedSchema = new mongoose.Schema({
+const BedSchema = new mongoose.Schema(
+  {
     roomId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Room",
-        required: [true, "Room Id is required for bed"]
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+      required: [true, "Room Id is required for bed"],
     },
     tenantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Tenant",
-        default: null,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tenant",
+      default: null,
     },
     bednumber: {
-        type: String,
-        required: [true, "Bed number is required"],
-        unique: true,
+      type: String,
+      required: [true, "Bed number is required"],
     },
     price: { type: Number, required: [true, "Price for Bed is required"] },
-},
-{ timestamps: true }
-)
-
-BedSchema.index({ roomId: 1, bednumber: 1 }, { unique: true });
+  },
+  { timestamps: true }
+);
 
 BedSchema.pre("save", async function (next) {
-    const bed = this;
-  
-    try {
-      // Validate roomId
-      if (bed.roomId) {
-        const Room = mongoose.model("Room");
-        const roomExists = await Room.exists({ _id: bed.roomId });
-        if (!roomExists) {
-          throw { 
-            message: "Invalid roomId: Room does not exist", 
-            status: 400, 
-            isCustomError: true 
-          };
-        }
-      }
-  
-      // Validate tenantId (if provided)
-      if (bed.tenantId) {
-        const Tenant = mongoose.model("Tenant");
-        const tenantExists = await Tenant.exists({ _id: bed.tenantId });
-        if (!tenantExists) {
-          throw { 
-            message: "Invalid tenantId: Tenant does not exist", 
-            status: 400, 
-            isCustomError: true 
-          };
-        }
-      }
-  
-      next(); // Proceed to save the document
-    } catch (error) {
-      next(error); // Pass the error to the error-handling middleware
+  const { roomId, bednumber } = this;
+  try {
+    //import model
+    const bed = mongoose.model("Bed");
+    const Room = mongoose.model("Room");
+
+    // Validate roomId
+    const roomExists = await Room.findOne({ _id: roomId });
+    if (!roomExists) {
+      throw {
+        message: "Invalid roomId: Room does not exist",
+        status: 400,
+        isCustomError: true,
+      };
     }
-  });
+
+    //ensure unique bedId
+    const isBedExist = await bed.exists({ roomId, bednumber });
+    if (isBedExist) {
+      throw {
+        message:
+          "A bed with this number already exists in the room. Please provide a unique bed number.",
+        status: 400,
+        isCustomError: true,
+      };
+    }
+
+    //ensure in room only proceed allowed bed.
+    const { roomType } = roomExists;
+    const numberOfBeds = await bed.countDocuments({ roomId });
+
+    const maxBedsAllowed = {
+      Single: 1,
+      Double: 2,
+      Triple: 3,
+    };
+
+    if (numberOfBeds >= maxBedsAllowed[roomType]) {
+      throw {
+        message: `Room has been filled with beds. Maximum allowed for ${roomType} room is ${maxBedsAllowed[roomType]}.`,
+        status: 400,
+        isCustomError: true,
+      };
+    }
+
+    next(); // Proceed to save the document
+  } catch (error) {
+    next(error); // Pass the error to the error-handling middleware
+  }
+});
 
 BedSchema.pre("findOneAndUpdate", async function (next) {
-    try {
-      const update = this.getUpdate(); // Get the update object
-      const { roomId, tenantId } = update;
-  
-      // Validate roomId (if provided in the update)
-      if (roomId) {
-        const Room = mongoose.model("Room");
-        const isRoomExist = await Room.exists({ _id: roomId });
-        if (!isRoomExist) {
-          throw { 
-            message: "Invalid roomId: Room does not exist", 
-            status: 400, 
-            isCustomError: true 
-          };
-        }
-      }
-  
-      // Validate tenantId (if provided in the update)
-      if (tenantId) {
-        const Tenant = mongoose.model("Tenant");
-        const isTenantExist = await Tenant.exists({ _id: tenantId });
-        if (!isTenantExist) {
-          throw { 
-            message: "Invalid tenantId: Tenant does not exist", 
-            status: 400, 
-            isCustomError: true 
-          };
-        }
-      }
-  
-      next(); // Proceed to the next middleware or save the document
-    } catch (error) {
-      next(error); // Pass the error to the error-handling middleware
+  const { roomId, bednumber } = this;
+  try {
+    //import model
+    const bed = mongoose.model("Bed");
+    const Room = mongoose.model("Room");
+
+    // Validate roomId
+    const roomExists = await Room.findOne({ _id: roomId });
+    if (!roomExists) {
+      throw {
+        message: "Invalid roomId: Room does not exist",
+        status: 400,
+        isCustomError: true,
+      };
     }
-  });
 
+    //ensure unique bedId
+    const isBedExist = await bed.exists({ roomId, bednumber });
+    if (isBedExist) {
+      throw {
+        message:
+          "A bed with this number already exists in the room. Please provide a unique bed number.",
+        status: 400,
+        isCustomError: true,
+      };
+    }
 
+    //ensure in room only proceed allowed bed.
+    const { roomType } = roomExists;
+    const numberOfBeds = await bed.countDocuments({ roomId });
+
+    const maxBedsAllowed = {
+      Single: 1,
+      Double: 2,
+      Triple: 3,
+    };
+
+    if (numberOfBeds >= maxBedsAllowed[roomType]) {
+      throw {
+        message: `Room has been filled with beds. Maximum allowed for ${roomType} room is ${maxBedsAllowed[roomType]}.`,
+        status: 400,
+        isCustomError: true,
+      };
+    }
+
+    next(); // Proceed to save the document
+  } catch (error) {
+    next(error); // Pass the error to the error-handling middleware
+  }
+});
 
 export default mongoose.model("Bed", BedSchema);

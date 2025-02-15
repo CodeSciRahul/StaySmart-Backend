@@ -1,14 +1,31 @@
 import Bed from "../../model/bed.js";
 import { handleError } from "../../../util/handleError.js";
-import {handleSuccessRes} from "../../../util/handleRes.js"
+import { handleSuccessRes } from "../../../util/handleRes.js";
 
 //create Bed
 export const addBed = async (req, res) => {
   try {
-    const { roomId, tenantId, bednumber, price } = req.body;
-    const newBed = new Bed({ roomId, tenantId, bednumber, price });
+    const { roomId, bednumber, price } = req.body;
+    if (!roomId) {
+      throw {
+        message: "Room Id is required.",
+        status: 400,
+        isCustomError: true,
+      };
+    }
+    // Validate and format bednumber
+    if (!bednumber || !/^\d+[A-Z]$/.test(bednumber)) {
+      throw {
+        message: "Bed number must be in the format like 101A, 102B, etc.",
+        status: 400,
+        isCustomError: true,
+      };
+    }
+
+    const newBed = new Bed({ roomId, bednumber, price });
     await newBed.save();
-    handleSuccessRes(newBed, res, "Bed added successfully")
+    const populatedData = Bed.findById(newBed?._id).populate("roomId")
+    handleSuccessRes(populatedData, res, "Bed added successfully");
   } catch (error) {
     handleError(error, res);
   }
@@ -18,23 +35,32 @@ export const addBed = async (req, res) => {
 export const updateBed = async (req, res) => {
   try {
     const { bedId } = req.params; // Bed ID to update
-    const { tenantId, bednumber, price } = req.body;
+    const { bednumber, price } = req.body;
+
+      // Validate and format bednumber
+      if (!bednumber || !/^\d+[A-Z]$/.test(bednumber)) {
+        throw {
+          message: "Bed number must be in the format like 101A, 102B, etc.",
+          status: 400,
+          isCustomError: true,
+        };
+      }
 
     const updatedBed = await Bed.findByIdAndUpdate(
-        bedId,
-      { tenantId, bednumber, price },
+      bedId,
+      { bednumber, price },
       { new: true } // Return the updated document
     );
 
     if (!updatedBed) {
-        throw {
-            message: "Bed not found",
-            status: 400,
-            isCustomError: true
-        }
+      throw {
+        message: "Bed not found",
+        status: 400,
+        isCustomError: true,
+      };
     }
 
-    handleSuccessRes(updateBed, res, "Bed updated successfully")
+    handleSuccessRes(updateBed, res, "Bed updated successfully");
   } catch (error) {
     handleError(error, res);
   }
@@ -44,28 +70,39 @@ export const updateBed = async (req, res) => {
 export const beds = async (req, res) => {
   try {
     const { roomId, pgId } = req.params;
-    if(roomId || pgId) {
-        throw {
-            message: "RoomId or PgId is required.",
-            status: 400,
-            isCustomError: true 
-        }
+    if (!(roomId || pgId)) {
+      throw {
+        message: "RoomId or PgId is required.",
+        status: 400,
+        isCustomError: true,
+      };
     }
-    const page = Number(req.query.page) || 1
-    const limit = Number(req.query.limit) || 10
-    const skip = (page - 1 )*limit;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     let Beds;
     if (roomId) {
-        Beds = await Bed.find({ roomId }).populate(
-        "roomId",
-        "tenantId name email"
-      )
-      .skip(skip)
-      .limit(limit)
-      .sort({bednumber: 1});
+      Beds = await Bed.find({ roomId }).populate({
+        path: "roomId",
+        select: "pgId roomNumber roomType features _id",
+        // populate: {
+        //   path: "pgId",
+        //   select: "name ownerId",
+        //   populate: {
+        //     path: "ownerId",
+        //     select: "name email phone"
+        //   }
+        // }
+      }).populate({
+        path: 'tenantId',
+        select: "name email phone meal images"
+      })
+        .skip(skip)
+        .limit(limit)
+        .sort({ bednumber: 1 });
     }
     if (pgId) {
-        Beds = await Bed.aggregate([
+      Beds = await Bed.aggregate([
         // Step 1: Lookup to join with the Room collection
         {
           $lookup: {
@@ -122,31 +159,38 @@ export const beds = async (req, res) => {
           },
         },
         //implement pagination
-        {$skip: skip},
-        {$limit: limit},
-        {$sort: {bednumber: 1}}
+        { $skip: skip },
+        { $limit: limit },
+        { $sort: { bednumber: 1 } },
       ]);
     }
+    if (!Beds) {
+      throw {
+        message: "RoomId or pgId is wrong",
+        status: 400,
+        isCustomError: true,
+      };
+    }
+    handleSuccessRes(Beds, res, "Beds reterived successfully");
   } catch (error) {
-    handleError(error, res)
+    handleError(error, res);
   }
 };
 
 //get single bed.
 export const bed = async (req, res) => {
-    try {
-        const {bedId} = req.params;
-        const bed = await Bed.findById(bedId).populate("roomId", "tenantId");
-        if(!bed) {
-            throw {
-                message: "Bed not found",
-                status: 400,
-                isCustomError: true
-            }
-        }
-        handleSuccessRes(bed, res, "Bed reterived successfully")
-        
-    } catch (error) {
-        handleError(error, res);
+  try {
+    const { bedId } = req.params;
+    const bed = await Bed.findById(bedId).populate("roomId", "tenantId");
+    if (!bed) {
+      throw {
+        message: "Bed not found",
+        status: 400,
+        isCustomError: true,
+      };
     }
-}
+    handleSuccessRes(bed, res, "Bed reterived successfully");
+  } catch (error) {
+    handleError(error, res);
+  }
+};

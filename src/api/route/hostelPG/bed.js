@@ -3,7 +3,8 @@ import { Router } from "express"
 
 export const bedRoute = Router();
 
-bedRoute.get("/beds", beds);
+bedRoute.get("/beds/:roomId", beds);
+bedRoute.get("/beds/:pgId", beds);
 bedRoute.get("/bed/:bedId", bed);
 bedRoute.post("/bed", addBed);
 bedRoute.put("/bed/:bedId", updateBed)
