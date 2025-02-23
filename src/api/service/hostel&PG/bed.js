@@ -1,6 +1,7 @@
 import Bed from "../../model/bed.js";
 import { handleError } from "../../../util/handleError.js";
 import { handleSuccessRes } from "../../../util/handleRes.js";
+import mongoose from "mongoose";
 
 //create Bed
 export const addBed = async (req, res) => {
@@ -24,7 +25,7 @@ export const addBed = async (req, res) => {
 
     const newBed = new Bed({ roomId, bednumber, price });
     await newBed.save();
-    const populatedData = Bed.findById(newBed?._id).populate("roomId")
+    const populatedData = Bed.findById(newBed?._id).populate("roomId");
     handleSuccessRes(populatedData, res, "Bed added successfully");
   } catch (error) {
     handleError(error, res);
@@ -37,19 +38,19 @@ export const updateBed = async (req, res) => {
     const { bedId } = req.params; // Bed ID to update
     const { bednumber, price } = req.body;
 
-      // Validate and format bednumber
-      if (!bednumber || !/^\d+[A-Z]$/.test(bednumber)) {
-        throw {
-          message: "Bed number must be in the format like 101A, 102B, etc.",
-          status: 400,
-          isCustomError: true,
-        };
-      }
+    // Validate and format bednumber
+    if (!bednumber || !/^\d+[A-Z]$/.test(bednumber)) {
+      throw {
+        message: "Bed number must be in the format like 101A, 102B, etc.",
+        status: 400,
+        isCustomError: true,
+      };
+    }
 
     const updatedBed = await Bed.findByIdAndUpdate(
       bedId,
       { bednumber, price },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
     if (!updatedBed) {
@@ -69,10 +70,11 @@ export const updateBed = async (req, res) => {
 //get all bed for room or hostel.
 export const beds = async (req, res) => {
   try {
-    const { roomId, pgId } = req.params;
-    if (!(roomId || pgId)) {
+    const {pgId} = req.params;
+    const objectPgId = new mongoose.Types.ObjectId(pgId);
+    if (!pgId) {
       throw {
-        message: "RoomId or PgId is required.",
+        message: "PgId is required.",
         status: 400,
         isCustomError: true,
       };
@@ -80,117 +82,142 @@ export const beds = async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    let Beds;
-    if (roomId) {
-      Beds = await Bed.find({ roomId }).populate({
-        path: "roomId",
-        select: "pgId roomNumber roomType features _id",
-        // populate: {
-        //   path: "pgId",
-        //   select: "name ownerId",
-        //   populate: {
-        //     path: "ownerId",
-        //     select: "name email phone"
-        //   }
-        // }
-      }).populate({
-        path: 'tenantId',
-        select: "name email phone meal images"
-      })
-        .skip(skip)
-        .limit(limit)
-        .sort({ bednumber: 1 });
-    }
-    if (pgId) {
-      Beds = await Bed.aggregate([
-        // Step 1: Lookup to join with the Room collection
-        {
-          $lookup: {
-            from: "rooms", // The collection to join with (Room)
-            localField: "roomId", // Field from the Bed collection
-            foreignField: "_id", // Field from the Room collection
-            as: "roomDetails", // Output array field
-          },
+    const matchStage = { "roomDetail.pgId": objectPgId };
+    //notes: lookup me jo bhi collection name likhte h use plural and small letter me likhte h even collection name capital or singular ho.
+  const Beds = await Bed.aggregate([
+      {
+        $lookup: {
+          from: "rooms",
+          localField: "roomId",
+          foreignField: "_id",
+          as: "roomDetail",
         },
-        // Step 2: Unwind the roomDetails array (since $lookup returns an array)
-        {
-          $unwind: "$roomDetails",
+      },
+
+      {
+        $unwind: {
+          path: "$roomDetail",
+          preserveNullAndEmptyArrays: true,
         },
-        // Step 3: Match rooms that belong to the given pgId
-        {
-          $match: {
-            "roomDetails.pgId": new mongoose.Types.ObjectId(pgId),
-          },
+      },
+      {
+        $lookup: {
+          from: "hostelpgs",
+          localField: "roomDetail.pgId",
+          foreignField: "_id",
+          as: "hostelpgDetail",
         },
-        // Step 4: Lookup to join with the Tenant collection (optional)
-        {
-          $lookup: {
-            from: "tenants", // The collection to join with (Tenant)
-            localField: "tenantId", // Field from the Bed collection
-            foreignField: "_id", // Field from the Tenant collection
-            as: "tenantDetails", // Output array field
-          },
+      },
+      {
+        $unwind: {
+          path: "$hostelpgDetail",
+          preserveNullAndEmptyArrays: true,
         },
-        // Step 5: Unwind the tenantDetails array (optional)
-        {
-          $unwind: {
-            path: "$tenantDetails",
-            preserveNullAndEmptyArrays: true, // Preserve beds without tenants
-          },
+      },
+
+      {
+        $lookup: {
+          from: "tenants",
+          localField: "tenantId",
+          foreignField: "_id",
+          as: "tenantDetail",
         },
-        // Step 6: Project the desired fields
-        {
-          $project: {
-            _id: 1,
-            bednumber: 1,
-            price: 1,
-            createdAt: 1,
-            updatedAt: 1,
-            roomDetails: {
-              _id: 1,
-              roomNumber: 1,
-              roomType: 1,
-            },
-            tenantDetails: {
-              _id: 1,
-              name: 1,
-              email: 1,
+      },
+      {
+        $unwind: {
+          path: "$tenantDetail",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: matchStage,
+      },
+      {
+        $group: {
+          _id: "$roomDetail._id",
+          roomNumber: { $first: "$roomDetail.roomNumber" },
+          roomType: { $first: "$roomDetail.roomType" },
+          features: { $first: "$roomDetail.features" },
+          pgId: { $first: "$hostelpgDetail" },
+          beds: {
+            $push: {
+              _id: "$_id",
+              bedNumber: "$bednumber",
+              price: "$price",
+              createdAt: "$createdAt",
+              updatedAt: "$updatedAt",
+              tenant: {
+                _id: "$tenantDetail._id",
+                name: "$tenantDetail.name",
+                email: "$tenantDetail.email",
+                phone: "$tenantDetail.phone",
+                meal: "$tenantDetail.meal",
+                images: "$tenantDetail.images",
+              },
             },
           },
+          totalBeds: {$sum: 1},
+          vacantBeds: {
+            $sum: {
+              $cond: [{$eq: ['$tenantId', null]}, 1, 0]
+            }
+          }
         },
-        //implement pagination
-        { $skip: skip },
-        { $limit: limit },
-        { $sort: { bednumber: 1 } },
-      ]);
-    }
-    if (!Beds) {
-      throw {
-        message: "RoomId or pgId is wrong",
-        status: 400,
-        isCustomError: true,
-      };
-    }
-    handleSuccessRes(Beds, res, "Beds reterived successfully");
+      },
+
+      {
+        $group: {
+          _id: "$pgId._id",
+          name: { $first: "$pgId.name" },
+          ownerId: { $first: "$pgId.ownerId" },
+          address: { $first: "$pgId.address" },
+          features: { $first: "$pgId.features" },
+          totalRooms: {$sum: 1},
+          vacantRooms:{
+            $sum: {
+              $cond: [{$eq: ['$vacantBeds', '$totalBeds']}, 1,0]
+            }
+          },
+          rooms: {
+            $push: {
+              _id: "$_id",
+              roomNumber: "$roomNumber",
+              roomType: "$roomType",
+              features: "$features",
+              totalBeds: "$totalBeds",
+              vacantBeds: "$vacantBeds",
+              beds: "$beds",
+            },
+          },
+        },
+      },
+
+      {
+        $project: {
+          _id: 0,
+            _id: "$_id",
+            name: "$name",
+            ownerId: "$ownerId",
+            address: "$address",
+            features: "$features",
+            totalRooms: "$totalRooms",
+            vacantRooms: "$vacantRooms", 
+            rooms: "$rooms",
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+      {
+        $sort: { bedNumber: -1 },
+      },
+    ]);
+    handleSuccessRes(Beds[0], res, "Beds reterived successfully");
   } catch (error) {
     handleError(error, res);
   }
 };
 
-//get single bed.
-export const bed = async (req, res) => {
-  try {
-    const { bedId } = req.params;
-    const bed = await Bed.findById(bedId).populate("roomId", "tenantId");
-    if (!bed) {
-      throw {
-        message: "Bed not found",
-        status: 400,
-        isCustomError: true,
-      };
-    }
-    handleSuccessRes(bed, res, "Bed reterived successfully");
-  } catch (error) {
-    handleError(error, res);
-  }
-};

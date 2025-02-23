@@ -2,7 +2,6 @@ import {
   AddHostelPG,
   deleteHostelPG,
   getAllHostelsPGs,
-  getHostelPGById,
   updateHostelPG,
 } from "../../service/hostel&PG/hostel.js";
 import {protectOwnerRoute} from "../../middleware/protectRoute/owner.js"
@@ -15,6 +14,5 @@ hostelPGRoute.post("/hostelPG", protectOwnerRoute, uploader.array("files", 5), A
 hostelPGRoute.put("/hostelPG/:id",protectOwnerRoute, uploader.array("files", 5),updateHostelPG)
 hostelPGRoute.delete("/hostelPG/:id", protectOwnerRoute, deleteHostelPG)
 hostelPGRoute.get("/hostelPG", getAllHostelsPGs)
-hostelPGRoute.get("/hostelPG", getHostelPGById)
 
 

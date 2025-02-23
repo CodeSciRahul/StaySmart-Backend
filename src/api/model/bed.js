@@ -38,12 +38,44 @@ BedSchema.pre("save", async function (next) {
       };
     }
 
+    // Check if bed number already exists in the same room
+    const isBedExistInRoom = await bed.findOne({ roomId, bednumber });
+    if (isBedExistInRoom) {
+      throw {
+        message: `A bed with this number already exists in the Room ${roomExists?.roomNumber}. Please provide a unique bed number.`,
+        status: 400,
+        isCustomError: true,
+      };
+    }
+
     //ensure unique bedId
-    const isBedExist = await bed.exists({ roomId, bednumber });
-    if (isBedExist) {
+    const isBedExistInPg = await bed.aggregate([
+      {
+        $lookup: {
+          from: "rooms",
+          localField: "roomId",
+          foreignField: "_id",
+          as: "roomDetail",
+        },
+      },
+      {
+        $unwind: {
+          path: "$roomDetail",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: {
+          "roomDetail.pgId": roomExists?.pgId,
+          bednumber: bednumber
+        },
+      },
+    ]);
+
+    if (isBedExistInPg.length > 0) {
       throw {
         message:
-          "A bed with this number already exists in the room. Please provide a unique bed number.",
+          "A bed with this number already exists in another room within the same PG. Please provide a unique bed number.",
         status: 400,
         isCustomError: true,
       };
@@ -69,7 +101,7 @@ BedSchema.pre("save", async function (next) {
 
     next(); // Proceed to save the document
   } catch (error) {
-    next(error); // Pass the error to the error-handling middleware
+    next({ message: error.message || "Something went wrong", status: 500 });
   }
 });
 
@@ -90,12 +122,44 @@ BedSchema.pre("findOneAndUpdate", async function (next) {
       };
     }
 
+    // Check if bed number already exists in the same room
+    const isBedExistInRoom = await bed.findOne({ roomId, bednumber });
+    if (isBedExistInRoom) {
+      throw {
+        message: `A bed with this number already exists in the Room ${roomExists?.roomNumber}. Please provide a unique bed number.`,
+        status: 400,
+        isCustomError: true,
+      };
+    }
+
     //ensure unique bedId
-    const isBedExist = await bed.exists({ roomId, bednumber });
-    if (isBedExist) {
+    const isBedExistInPg = await bed.aggregate([
+      {
+        $lookup: {
+          from: "rooms",
+          localField: "roomId",
+          foreignField: "_id",
+          as: "roomDetail",
+        },
+      },
+      {
+        $unwind: {
+          path: "$roomDetail",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: {
+          "roomDetail.pgId": roomExists?.pgId,
+          bednumber: bednumber,
+        },
+      },
+    ]);
+
+    if (isBedExistInPg.length > 0) {
       throw {
         message:
-          "A bed with this number already exists in the room. Please provide a unique bed number.",
+          "A bed with this number already exists in another room within the same PG. Please provide a unique bed number.",
         status: 400,
         isCustomError: true,
       };

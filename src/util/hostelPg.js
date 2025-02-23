@@ -23,7 +23,8 @@ export const checkRoomVacancy = async(roomNumber, pgId) => {
                 totalBeds: { $sum: 1 },
                 occupiedBeds: {
                   $sum: {
-                    $cond: [{ $ne: ["$tenantId", null] }, 1, 0], 
+                    $cond: [{ $ne: ["$tenantId", null] }, 1, 0], //syntax for cond: [{boolean expression}, <true case>, <false case>]
+                    //{ ne: [ <expression1>, <expression2> ] } compare expression1 and expression2 and return true or false
                   },
                 },
               },

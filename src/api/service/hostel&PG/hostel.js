@@ -66,20 +66,6 @@ export const getAllHostelsPGs = async (req, res) => {
   }
 };
 
-// ✅ Get Single Hostel/PG by ID
-export const getHostelPGById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const hostelPG = await HostelPG.findById(id);
-    if (!hostelPG)
-      return res.status(404).send({ message: "Hostel/PG not found" });
-
-    return res.status(200).send({ data: hostelPG });
-  } catch (error) {
-    handleError(error, res);
-  }
-};
-
 // ✅ Update Hostel/PG
 export const updateHostelPG = async (req, res) => {
   try {
