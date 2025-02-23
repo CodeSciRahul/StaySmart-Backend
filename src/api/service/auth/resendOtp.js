@@ -1,20 +1,36 @@
-import {sendOtpToEmail} from "../auth/register.js"
+import { handleError } from "../../../util/handleError.js";
+import { handleSuccessRes } from "../../../util/handleRes.js";
+import owner from "../../model/owner.js";
+import tenant from "../../model/tenant.js";
+import { sendOtpToEmail } from "../auth/register.js";
 
 export const resendOtp = async (req, res) => {
-    try {
-      const { email } = req.body;
-  
-      if (!email) {
-        return res.status(400).send({ message: "Email is required." });
-      }
-  
-      // Send a new OTP
-      await sendOtpToEmail(email);
-  
-      res.status(200).send({ message: "OTP resent successfully." });
-    } catch (error) {
-      console.error(error?.message);
-      res.status(500).send({ message: "Server error.", error: error?.message });
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw {
+        message: "Email id is required",
+        status: 400,
+        isCustomError: true,
+      };    }
+    //verify Email is exist or not?
+    let user;
+    user = await tenant.findOne({ email });
+    user = await owner.findOne({ email });
+
+    if (!user) {
+      throw {
+        message: "User not exist",
+        status: 400,
+        isCustomError: true,
+      };
     }
-  };
-  
+    // Send a new OTP
+    await sendOtpToEmail(email);
+    handleSuccessRes(null, res, "OTP resent successfully.");
+  } catch (error) {
+    console.error(error?.message);
+    handleError(error, res);
+  }
+};

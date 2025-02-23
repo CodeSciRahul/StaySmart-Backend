@@ -1,6 +1,10 @@
 import Owner from "../../model/owner.js";
 import { sendEmail } from "../../../util/sendEmail.js";
 import { Redisclient } from "../../../config/dbConnection.js";
+import {promisify} from "util"
+
+const setAsync = promisify(Redisclient.set).bind(Redisclient);
+
 
 export const generateOtp = (length) => {
   const digits = "0123456789";
@@ -13,13 +17,16 @@ export const generateOtp = (length) => {
 
 export const sendOtpToEmail = async (email) => {
   try {
-    //generate otp
+    // Generate OTP
     const otp = generateOtp(6);
 
-    //store otp
+    // Store OTP with expiry time directly using async/await
     const key = `otp:${email}`;
-    Redisclient.set(key, otp, "EX", 600);
+    await Redisclient.set(key, otp, {
+      EX: 600, // Expiry time of 5 minutes (300 seconds)
+    });
 
+    // Prepare email content
     const subject = "Your OTP";
     const html = `<!DOCTYPE html>
 <html>
@@ -40,26 +47,24 @@ export const sendOtpToEmail = async (email) => {
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Your OTP</h1>
         <p>Your One-Time Password (OTP) is: <b>${otp}</b></p>
         <p>Please use this OTP to complete the verification process.</p>
-        <p>This OTP is valid for 5 minutes.</p>
+        <p>This OTP is valid for 10 minutes.</p>
     </div>
-
 </body>
 </html>`;
 
-    const bodyText = `Your OTP is: ${otp}
-This code expires in 5 minutes.`;
+    const bodyText = `Your OTP is: ${otp}\nThis code expires in 5 minutes.`;
 
-    //send otp
+    // Send OTP via email
     await sendEmail(email, subject, html, bodyText);
   } catch (error) {
-    throw error
+    throw error;
   }
 };
+
 
 export const register = async (req, res) => {
   try {
